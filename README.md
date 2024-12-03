@@ -39,11 +39,23 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --e
 pip install -r requirements.txt
 cd stable-diffusion
 pip install -e .
-cd stable-diffusion
-pip install -e .
 ```
 Get the dataset with
 ```bash
 bash get_dataset.sh
+```
+To install the stable-diffusion v1.4. You can download the sd-v1-4.ckpt file from hugging face link or use wget
+```bash
+wget https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt
+```
+place the model checkpoint in the following path:
+```
+stable-diffusion/models/ldm/stable-diffusion-v1/model.ckpt
+```
+or just simply input
+```bash
+cd stable-diffusion
+mkdir -p ldm/models/stable-diffusion-v1/
+mv sd-v1-4.ckpt ldm/models/stable-diffusion-v1/model.ckpt
 ```
 
