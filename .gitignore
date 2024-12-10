@@ -5,3 +5,7 @@
 student_data/*
 sample_submission.csv
 Data
+**/*ckpt.pth
+*.ckpt
+**/__pycache__/**
+*.png

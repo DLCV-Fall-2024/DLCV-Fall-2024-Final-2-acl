@@ -118,11 +118,15 @@ class TextualInversion:
             self.text_encoder.requires_grad_(False)
             self.transformer.requires_grad_(True)
             self.unet.requires_grad_(True)
+        for name, param in self.unet.named_parameters():
+            if "attn" in name and ("to_k" in name or "to_v" in name):
+                param.requires_grad_(True)
+        
 
         # Initialize placeholder token embeddings
-        self.token_embeddings   = nn.ParameterDict()
-        self.initial_token_embeddings = {}
-        self.placeholder_tokens = special_tokens
+        self.token_embeddings           = nn.ParameterDict()
+        self.initial_token_embeddings   = {}
+        self.placeholder_tokens         = special_tokens
         self.__initialize_tokens()
 
         # Inf config setup
@@ -168,9 +172,9 @@ class TextualInversion:
         similar_tokens ={   
             # '<new1>': ["dog", "puppy", "small dog", "cute dog", "Corgi dog"],
             # '<new2>': ["fantasy", "illustration", "painting", "artwork"]
-            '<new1>': ["dog"],
-            '<new2>': ["imaginative digital paint"],
-            '<new3>': ["dog"]
+            '<cat2>': ["cat"],
+            '<dog>': ["dog"],
+            '<dog6>': ["dog"]
         }
         for token in self.placeholder_tokens:
             token_similar_tokens    = similar_tokens[token]
@@ -243,13 +247,9 @@ class TextualInversion:
             "A sketch of {}.",
             "An illustration of {}.",
             "A view of {}.",
-            "A scene showing {}.",
             "One figure of {}.",
             "{} image.",
-            "Style of {}.",
-            "Impression of {}.",
             "Image of {}.",
-            "Photo in a {} style.",
             "A portrait of {}."
         ]
 
@@ -261,8 +261,17 @@ class TextualInversion:
         for name, param in self.token_embeddings.items():
             logger.info(f"train_tokens: self.token_embeddings{name}: requires_grad={param.requires_grad}")
         self.transformer.get_input_embeddings().requires_grad_(True)
-        embedding_params    = self.transformer.get_input_embeddings().parameters()
-        self.optimizer      = torch.optim.AdamW(embedding_params, lr=self.train_config["learning_rate"])
+        # embedding_params    = self.transformer.get_input_embeddings().parameters()
+        # self.optimizer      = torch.optim.AdamW(embedding_params, lr=self.train_config["learning_rate"])
+        trainable_params = [
+            param for name, param in self.model.named_parameters()
+            if "attn" in name and ("to_k" in name or "to_v" in name)
+        ] + [
+            self.transformer.get_input_embeddings().weight
+        ]
+
+        self.optimizer = torch.optim.AdamW(trainable_params, lr=self.train_config["learning_rate"])
+
 
 
         for epoch in range(self.train_config["num_epochs"]):
@@ -291,13 +300,13 @@ class TextualInversion:
             # Save checkpoint if loss improves
             # if epoch in [0,5,10,50,75,100] or epoch % 100 == 0 :
             if epoch in [0, 5, 10, 50, 75, 100] or epoch % 100 == 0 or (400 <= epoch <= 900 and (epoch - 400) % 20 == 0):
-                self.save_checkpoint(epoch, best_loss, save_path=f'./ckpt_folder_new/epoch{epoch}_2_ckpt')
+                self.save_checkpoint(epoch, best_loss, save_path=f'./ckpt_folder/epoch{epoch}_ckpt')
                 # torch.cuda.empty_cache()
                 # with torch.no_grad():
                 #     for idx, p in enumerate(self.text_prompts):
                 #         ti.inference(prompt_template=p, num_iter = 1, save_path = f'sample_epoch{epoch}_p{idx}', save_num = 1, low_reslou = True)
 
-        self.save_checkpoint(epoch, avg_epoch_loss, save_path=f'last_ckpt')
+        # self.save_checkpoint(epoch, avg_epoch_loss, save_path=f'last_ckpt')
 
     def train_step(self, images, tokens, prompt_template = "A photo of {}."):
 
@@ -326,6 +335,18 @@ class TextualInversion:
         # Compute loss with respect to custom embeddings
         pred_noise  = self.model.apply_model(noisy_latents, timesteps, text_input_ids)
         loss        = self.criterion(pred_noise, noise)
+
+        # embeddings = torch.stack([self.token_embeddings[token_id] for token_id in self.token_embeddings.keys()])
+        # norm_embeddings = embeddings / embeddings.norm(dim=1, keepdim=True)  # Normalize embeddings
+        # ortho_loss = torch.sum(torch.triu(norm_embeddings @ norm_embeddings.T, diagonal=1).abs())  # Penalize off-diagonal terms
+        ortho_loss = 0
+        for name, param in self.model.named_parameters():
+            if "attn" in name and ("to_k" in name or "to_v" in name):
+                weight = param.view(param.shape[0], -1)  # Flatten weight matrix
+                ortho_loss += torch.sum((weight @ weight.T - torch.eye(weight.shape[0], device=weight.device)) ** 2)
+
+        # Combine losses
+        loss = loss + 0.2 * ortho_loss
 
         logger.debug(f"Pred noise requires_grad: {pred_noise.requires_grad}")
         logger.debug(f"Latents requires_grad: {latents.requires_grad}")
@@ -371,8 +392,8 @@ class TextualInversion:
             self.transformer.get_input_embeddings().weight.data.copy_(current_embeddings)
             
             # Restore original UNet parameters
-            for name, param in self.unet.named_parameters():
-                param.copy_(self.original_unet_params[name])
+            # for name, param in self.unet.named_parameters():
+            #     param.copy_(self.original_unet_params[name])
 
             # self.__check_embedding_updates(initial_embeddings, pre_update_embeddings)
 
@@ -538,13 +559,10 @@ class TextualInversion:
                         
 
 ti_config = {
-        "tokens_to_train": ["<new1>", "<new2>", "<new3>"],
+        "tokens_to_train": ["cat2", "dog", "dog6", "flower_1", "pet_cat1", "vase", "watercolor", "wearable_glasses"],
         "config_path"   : "./configs/stable-diffusion/v1-inference.yaml",
         "model_path"    : "./ldm/models/stable-diffusion-v1/model.ckpt",
-        "new1_img_dir"  : "../hw2_data/textual_inversion/0",
-        "new2_img_dir"  : "../hw2_data/textual_inversion/1",
-        "new3_img_dir"  : "../hw2_data/textual_inversion/cat",
-        "new4_img_dir"  : "../hw2_data/textual_inversion/mydog",
+        "img_dir"       : "../Data/concept_image/",
         "do_train"      : 1,
         "train_config"  :{
             "train_batch_size"  : 2,
@@ -553,7 +571,7 @@ ti_config = {
             "learning_rate"     : 5e-4,
             "precision"         : "autocast",
         },
-        "do_sample"     : 0 ,
+        "do_sample"     : 1 ,
         "sample_config" :{
             "inf_batch_size"    : 1,
             "output_folder"     : "./output",
@@ -570,7 +588,7 @@ ti_config = {
 if __name__ == "__main__":
     config = ti_config
 
-    # tokens_to_train = ['dog',"<new1>", "<new2>"]
+    tokens_to_train = config["tokens_to_train"]
     device          = "cuda" if torch.cuda.is_available() else torch.device("cpu")
     ti              = TextualInversion( config["config_path"], 
                                         config["model_path"], 
@@ -579,13 +597,15 @@ if __name__ == "__main__":
                                         train_config=config["train_config"], 
                                         inf_config = config["sample_config"]
                                     )
-    dataset1        = CustomDataset(config["new1_img_dir"], token=config["tokens_to_train"][0], imgz = config["train_config"]["trian_imgz"])
-    dataset2        = CustomDataset(config["new2_img_dir"], token=config["tokens_to_train"][1], imgz = config["train_config"]["trian_imgz"])
-    dataset3        = CustomDataset(config["new4_img_dir"], token=config["tokens_to_train"][2], imgz = config["train_config"]["trian_imgz"])
-    # combined_dataset = torch.utils.data.ConcatDataset([dataset1, dataset2])
-    # dataloader      = DataLoader(combined_dataset, batch_size=config["train_config"]["train_batch_size"], shuffle=True, num_workers = 4)
-    dataloader      = DataLoader(dataset2, batch_size=config["train_config"]["train_batch_size"], shuffle=True, num_workers = 4)
-    
+    combine_dataset_list = []
+    for idx ,new_token in enumerate(tokens_to_train):
+        token   = f"<{new_token}>"
+        img_dir = os.path.join(config["img_dir"], new_token)
+        dataset = CustomDataset(img_dir, token=token, imgz = config["train_config"]["trian_imgz"])
+        combine_dataset_list.append(dataset)
+
+    combined_dataset= torch.utils.data.ConcatDataset(combine_dataset_list)
+    dataloader      = DataLoader(combined_dataset, batch_size=config["train_config"]["train_batch_size"], shuffle=True, num_workers = 4)    
 
     if config["do_train"]:
         # ti.load_checkpoint(f'./epoch600new_ckpt.pth')
@@ -593,20 +613,18 @@ if __name__ == "__main__":
 
     test_prompts = [
         # "a photograph of an astronaut riding a horse",
-        "A photo of <new1>.",
-        "A <new1> shepherd posing proudly on a hilltop with Mount Fuji in the background.",
-        "A <new1> perched on a park bench with the Colosseum looming behind.",
-        "A photo of <new2>.",
-        "The streets of Paris in the style of <new2>.",
-        "Manhattan skyline in the style of <new2>.",
-        "A photo of <new3>.",
-        "<new3> in the style of <new2>."
+        "A <cat2> on a hilltop with Mount Fuji in the background.",
+        "A <dog> eating food.",
+        "A photo of <dog6>.",
+        "A <cat2> on the right and a <dog6> on the left.",
     ]
 
     if config["do_sample"]:
-        ti.load_checkpoint(f'./epoch{epoch}_3_ckpt.pth',token_ids_to_update=[49410])
+        epoch = 440
+        ti.load_checkpoint(f'./ckpt_folder/epoch{epoch}_ckpt.pth',token_ids_to_update=[49408, 49409, 49410])
+        # ti.load_checkpoint(f'./ckpt_folder/epoch{epoch}_ckpt.pth',token_ids_to_update=[49409])
         for idx, p in enumerate(test_prompts):
-            if idx in [6,7]:
-                ti.inference(prompt_template=p, num_iter = 1, save_path = f'epoch{epoch}_p{idx}', save_num = 1)
+            # if idx in [2]:
+            ti.inference(prompt_template=p, num_iter = 25, save_path = f'epoch{epoch}_p{idx}', save_num = 5)
 
 
