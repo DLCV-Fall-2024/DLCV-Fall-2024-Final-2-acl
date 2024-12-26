@@ -13,3 +13,5 @@ gradio==3.23.0
 pillow
 packaging
 numpy
+huggingface-hub==0.16.4
+gdown
