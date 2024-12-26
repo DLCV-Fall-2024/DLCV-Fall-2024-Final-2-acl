@@ -30,9 +30,8 @@ As our inference need a layout and the model need to know the specific trained e
 bash inference_all.sh
 ```
 When the inference information and the path to the layout image are written in the output(1~4).json
-Remember to provide a pre-defined layout like [layout_example.png](pics/layout_example.png) and a 
-[json](guidance_config_example.json) file with the info about the details of the inference settings. The 
-[json](guidance_config_example.json) file should include the following information:
+Remember to provide a pre-defined layout and a json file with the info about the details of the inference settings. The 
+json file should include the following information:
 
 - "prompt": the text prompt you want to generate.
 - "residual_dict": the paths to all the required residual embeddings.
