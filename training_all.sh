@@ -30,7 +30,7 @@ for INSTANCE_NAME in "${!Foldername[@]}"; do
     --instance_prompt="$INSTANCE_PROMPT" \
     --token_num=1 \
     --output_dir=$OUTPUT_DIR \
-    --resolution=512 \
+    --resolution=768 \
     --train_batch_size=1 \
     --gradient_accumulation_steps=3 \
     --learning_rate=5e-6 \
