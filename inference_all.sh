@@ -4,7 +4,7 @@
 export MODEL_NAME="stabilityai/stable-diffusion-2-1"
 
 # List of JSON configuration files
-CONFIG_FILES=("output1.json" "output2.json" "output3.json" "output4.json")
+CONFIG_FILES=("guidance_config_prompt0.json" "guidance_config_prompt1.json" "guidance_config_prompt2.json" "guidance_config_prompt3.json")
 
 # Indices of files to skip (1-based indexing for user readability)
 SKIP_CONFIG_INDICES=()
