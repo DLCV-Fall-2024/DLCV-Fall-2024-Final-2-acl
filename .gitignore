@@ -5,3 +5,5 @@
 student_data/*
 sample_submission.csv
 Data
+
+**/__pycache__/**
