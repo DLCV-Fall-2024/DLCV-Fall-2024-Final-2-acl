@@ -54,3 +54,16 @@ As our inference need a layout and the model need to know the specific trained e
 bash inference_all.sh
 ```
 When the inference information and the path to the layout image are written in the output(1~4).json
+Remember to provide a pre-defined layout like [layout_example.png](pics/layout_example.png) and a 
+[json](guidance_config_example.json) file with the info about the details of the inference settings. The 
+[json](guidance_config_example.json) file should include the following information:
+
+- "prompt": the text prompt you want to generate.
+- "residual_dict": the paths to all the required residual embeddings.
+- "color_context": the color information of different regions in the layout and their corresponding subjects, along with 
+the weight for strengthening the signal of target subject. (default: 2.5).
+- "guidance_steps": the number of steps of the layout guidance.
+- "guidance_weight": the strength of the layout guidance (default: 0.08, we recommond 0.05 ~ 0.10).
+- "weight_negative": the weight for weakening the signal of irrelevant subject.
+- "layout": the path to user-defined layout image.
+- "subject_list": the list containing all the subjects to be customized and their corresponding positions in the prompt.
