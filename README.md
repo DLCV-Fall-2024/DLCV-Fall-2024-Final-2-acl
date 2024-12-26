@@ -37,6 +37,9 @@ Install the environment with pip and requirements.txt, note that the version of 
 ```bash 
 pip install -r requirements.txt
 ```
+```bash
+accelerate config default
+```
 Get the dataset with
 ```bash
 bash get_dataset.sh
