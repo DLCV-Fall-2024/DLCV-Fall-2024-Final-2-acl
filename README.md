@@ -42,7 +42,15 @@ Get the dataset with
 bash get_dataset.sh
 ```
 # Training
-
-
+We wrote the bash script that can train the concepts for the tasks, by simply run 
+```bash
+bash training_all.sh
+```
+The tuned parameters for the concept will be store in the specific folder assign in the .sh
 
 # Inference
+As our inference need a layout and the model need to know the specific trained embedding for the concept, we assign the json and the layout image for the prompt individualy
+```bash 
+bash inference_all.sh
+```
+When the inference information and the path to the layout image are written in the output(1~4).json

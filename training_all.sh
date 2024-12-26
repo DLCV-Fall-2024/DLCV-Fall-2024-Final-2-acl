@@ -36,7 +36,7 @@ for INSTANCE_NAME in "${!Foldername[@]}"; do
     --learning_rate=5e-6 \
     --lr_scheduler="constant" \
     --lr_warmup_steps=0 \
-    --max_train_steps=10 \
+    --max_train_steps=5000 \
     --loss_rate_first=1e-2 \
     --loss_rate_second=1e-3
 
