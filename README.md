@@ -1,5 +1,10 @@
 DLCV Final Project ( Multiple Concept Personalization )
 
+# Usage
+To start working on this project, you should clone this repository into your local machine by using the following command.
+```bash
+git clone https://github.com/DLCV-Fall-2024/DLCV-Fall-2024-Final-2-acl.git
+```
 # Environment Setup
 This work should be completed using Python 3.9.21. Create a environment under conda
 ```bash
