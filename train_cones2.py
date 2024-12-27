@@ -742,7 +742,7 @@ def main(args):
                 loss_embedding = args.loss_rate_first * l_first_part + args.loss_rate_second * l_second_part
 
                 # Predict the noise residual
-                model_pred = unet(noisy_latents.float(), timesteps, encoder_hidden_states.float()).sample
+                model_pred = unet(noisy_latents.half(), timesteps, encoder_hidden_states.half()).sample
 
                 # Get the target for loss depending on the prediction type
                 if noise_scheduler.config.prediction_type == "epsilon":
